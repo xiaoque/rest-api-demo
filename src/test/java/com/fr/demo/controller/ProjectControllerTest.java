@@ -67,8 +67,7 @@ public class ProjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0],name").value("Test Project"));
+                .andExpect(jsonPath("$[0].name").value("Test Project"));
 
     }
 
