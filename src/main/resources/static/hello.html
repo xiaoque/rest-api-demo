@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Project Page</title>
+    <script src=”https://code.jquery.com/jquery-3.6.0.min.js”></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/cosmo/bootstrap.min.css" />
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+
+<body class="bg-light">
+    <div class="container">
+
+        <div id="projectList" class="row">
+
+        </div>
+        <div>
+            <form id="addNewProject">
+                <div>
+                    <label>NAME</label>
+                    <input type="text" id="name" name="name">
+                </div>
+                <div>
+                    <label>TYPE</label>
+                    <select name="type" class="project-type-dropdown" id="projectDropdown"
+                        form="addNewProject"></select>
+                </div>
+                <button type="button" id="addNewProjectSubmit" class="btn btn-primary"
+                    onclick="addNewProject(renderProjectListCallback(document.getElementById('projectList')));">Add</button>
+            </form>
+        </div>
+
+    </div>
+
+    <script type="text/javascript" src="js/projectApi.js"></script>
+</body>
+
+</html>

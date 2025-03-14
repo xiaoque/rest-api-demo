@@ -1,0 +1,13 @@
+# .gitlab-ci/deploy.yml
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying the application..."
+    - kubectl apply -f kubernetes/deployment.yaml
+    - kubectl apply -f kubernetes/service.yaml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_COMMIT_REF_NAME == "main" && $CI_PIPELINE_SOURCE == "push"'
+      when: manual
+    - when: never

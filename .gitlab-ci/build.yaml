@@ -1,0 +1,21 @@
+# .gitlab-ci/build.yml
+build:
+  stage: build
+  script:
+    - echo "Building the application..."
+    - ./mvnw clean package
+    - echo "Logging in to GitLab Container Registry..."
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - echo "Building Docker image..."
+    - docker build -t "$CI_REGISTRY_IMAGE:latest" .
+    - echo "Pushing Docker image to GitLab Container Registry..."
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+  artifacts:
+    paths:
+      - target/*.jar
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - when: never

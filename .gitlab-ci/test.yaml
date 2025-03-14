@@ -1,0 +1,6 @@
+# .gitlab-ci/test.yml
+run_tests:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - ./mvnw test

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-spring-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-spring-app
+  template:
+    metadata:
+      labels:
+        app: my-spring-app
+    spec:
+      containers:
+      - name: my-spring-app
+        image: my-spring-app:latest
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:ingres://ingres-db-service:5432/mydatabase
+        - name: SPRING_DATASOURCE_USERNAME
+          value: myuser
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ingres-credentials
+              key: password
+        ports:
+        - containerPort: 8080
