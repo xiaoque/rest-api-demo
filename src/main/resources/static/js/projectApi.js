@@ -1,3 +1,60 @@
+let clientProjectCache = {
+  projects: [],
+  projectTypes: [],
+};
+
+const simulateProjectUpdate = (project) => {
+  clientProjectCache.projects = [...clientProjectCache.projects, project];
+  renderProjectList();
+};
+
+const simulateProjectTypesUpdate = (projectTypes) => {
+  clientProjectCache.projectTypes = projectTypes;
+  renderProjectTypesOptions();
+}
+
+// Fetch initial data and populate cache
+const initializeData = async () => {
+  try {
+    clientProjectCache.projects = await fetchData("/projects/");
+    clientProjectCache.projectTypes = await fetchData("/projects/types"); // Fetch project types
+    renderProjectList();
+    renderProjectTypesOptions();
+  } catch (error) {
+    renderError(error.message);
+  }
+};
+
+const renderProjectTypesOptions = () => {
+  const projectDropdowns = document.getElementsByClassName(
+    "project-type-dropdown"
+  );
+  Array.from(projectDropdowns).forEach((dropdown) => {
+    dropdown.innerHTML = "";
+    clientProjectCache.projectTypes.forEach((type) => {
+      const html = document.createElement("option");
+      html.setAttribute("value", type);
+      html.innerHTML = type;
+      dropdown.appendChild(html);
+    });
+  });
+};
+
+const renderProjectList = () => {
+  const projectList = document.getElementById("projectList");
+  projectList.innerHTML = "";
+  clientProjectCache.projects.forEach((project) => {
+    const projectHtml = document.createElement("p");
+    projectHtml.innerHTML = `
+            <b>ID :</b>${project.id}</br>
+            <b>NAME :</b>${project.name}</br>
+            <b>TYPE :</b>${project.type}</br>
+        `;
+    projectList.appendChild(projectHtml);
+  });
+};
+
+
 const fetchData = async (url, options = {}) => {
   try {
     const res = await fetch(url, options);
@@ -12,25 +69,7 @@ const fetchData = async (url, options = {}) => {
   }
 };
 
-const fetchAllProjects = async (cb) => {
-  try {
-    const projects = await fetchData("/projects/");
-    cb(projects);
-  } catch (error) {
-    renderError(error.message);
-  }
-}
-
-const fetchProjectTypes = async (cb) => {
-  try {
-    const projectTypes = await fetchData("/projects/types");
-    cb(projectTypes);
-  } catch (error) {
-    renderError(error.message);
-  }
-}
-
-const addNewProject = async (cb) => {
+const addNewProject = async () => {
   const form = document.getElementById("addNewProject").elements;
   const name = form["name"].value;
   const type = form["type"].value;
@@ -41,52 +80,14 @@ const addNewProject = async (cb) => {
   try {
     const newProject = await fetchData("/projects/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(project) });
     alert(`New Project added with id ${newProject.id}:(${JSON.stringify(newProject)})`);
-    fetchAllProjects(cb);
+    simulateProjectUpdate(newProject);
   } catch (error) {
     renderError(error.message);
   }
 }
 
-const renderProjectListCallback = (projectList) => (projects) => {
-  projectList.innerHTML = "";
-  projects.forEach(project => {
-    const projectHtml = document.createElement("p");
-    projectHtml.innerHTML = `
-            <b>ID :</b>${project.id}</br>
-            <b>NAME :</b>${project.name}</br>
-            <b>TYPE :</b>${project.type}</br>
-        `;
-    projectList.appendChild(projectHtml);
-  });
-}
-
-const renderProjectTypesOptionsCallback = (projectDropdowns) => (projectTypes) => {
-  console.log(projectTypes);
-  Array.from(projectDropdowns).forEach((dropdown) => {
-    dropdown.innerHTML = "";
-    projectTypes.forEach(type => {
-      const html = document.createElement("option");
-      html.setAttribute("value", type);
-      html.innerHTML = type;
-      dropdown.appendChild(html);
-    });
-  });
-}
-
-
-
 const renderError = (message) => {
   alert(`Error calling API: ${message}`);
 }
 
-fetchAllProjects(
-  renderProjectListCallback(
-    document.getElementById("projectList")
-  )
-);
-
-fetchProjectTypes(
-  renderProjectTypesOptionsCallback(
-    document.getElementsByClassName("project-type-dropdown")
-  )
-);
+initializeData();

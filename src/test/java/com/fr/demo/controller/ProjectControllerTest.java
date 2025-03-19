@@ -1,85 +1,131 @@
 package com.fr.demo.controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import com.fr.demo.model.dto.ProjectDto;
+import com.fr.demo.model.enums.ProjectType;
+import com.fr.demo.service.ProjectService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import com.fr.demo.model.enums.ProjectType;
-import com.fr.demo.model.dto.ProjectDto;
-import com.fr.demo.service.ProjectService;
-
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(ProjectController.class)
 public class ProjectControllerTest {
+
+    @Autowired
     private MockMvc mockMvc;
 
-    @Mock
-    private ProjectService projectService; // Mock the service
+    @MockBean
+    private ProjectService projectService;
 
-    @InjectMocks
-    private ProjectController projectController; // Inject the mock into the controller
+    @MockBean
+    private KafkaTemplate<String, ProjectDto> projectKafkaTemplate;
+
+    @MockBean
+    private KafkaTemplate<String, String> stringKafkaTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     private ProjectDto projectDto;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(projectController).build();
-
         projectDto = new ProjectDto();
         projectDto.setName("Test Project");
         projectDto.setType(ProjectType.CROCHET);
     }
 
     @Test
-    void saveProject_ValidProject_ReturnsCreated() throws Exception {
-        // Arrange
+    void saveProject_ShouldReturnCreatedAndSendKafkaMessage() throws Exception {
         when(projectService.saveProject(any(ProjectDto.class))).thenReturn(projectDto);
 
-        // Act & Assert
+        CompletableFuture<SendResult<String, ProjectDto>> future = CompletableFuture
+                .completedFuture(mock(SendResult.class));
+        when(projectKafkaTemplate.send(eq("project.created"), any(ProjectDto.class))).thenReturn(future);
+
         mockMvc.perform(post("/projects/")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"Test Project\",\"type\":\"CROCHET\"}"))
+                .content(objectMapper.writeValueAsString(projectDto)))
+                .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("Test Project"))
                 .andExpect(jsonPath("$.type").value("CROCHET"));
+
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<ProjectDto> messageCaptor = ArgumentCaptor.forClass(ProjectDto.class);
+        verify(projectKafkaTemplate).send(topicCaptor.capture(), messageCaptor.capture());
+
+        assertThat(topicCaptor.getValue()).isEqualTo("project.created");
+        assertThat(messageCaptor.getValue()).isEqualTo(projectDto);
     }
 
     @Test
-    void getAllProjects_ShouldReturnAllProjects() throws Exception {
-        when(projectService.getAllProjects()).thenReturn(Arrays.asList(projectDto));
+    void getAllProjects_ShouldReturnProjectsAndSendAccessLog() throws Exception {
+        List<ProjectDto> projects = Arrays.asList(projectDto);
+        when(projectService.getAllProjects()).thenReturn(projects);
 
         mockMvc.perform(get("/projects/"))
-                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].type").value("CROCHET"))
                 .andExpect(jsonPath("$[0].name").value("Test Project"));
 
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(stringKafkaTemplate).send(topicCaptor.capture(), messageCaptor.capture());
+
+        assertThat(topicCaptor.getValue()).isEqualTo("project.api.access");
+        assertThat(messageCaptor.getValue()).isEqualTo("getAll projects endpoint accessed");
     }
 
     @Test
-    void getAllEnums_ShouldReturnAllProjectTypes() throws Exception {
-        List<ProjectType> projectTypes = Arrays.asList(ProjectType.values());
-        when(projectService.getProjectTypes()).thenReturn(projectTypes);
+    void getProjectTypes_ShouldReturnAllEnumValues() throws Exception {
+        List<ProjectType> types = Arrays.asList(ProjectType.values());
+        when(projectService.getProjectTypes()).thenReturn(types);
 
         mockMvc.perform(get("/projects/types"))
-                .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(projectTypes.size()));
+                .andExpect(jsonPath("$.length()").value(types.size()))
+                .andExpect(jsonPath("$[0]").value(ProjectType.CROCHET.toString()));
     }
+
+    @Test
+    void getProjectById_ShouldReturnProject() throws Exception {
+        when(projectService.findProjectById(1)).thenReturn(projectDto);
+
+        mockMvc.perform(get("/projects/id/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.type").value("CROCHET"))
+                .andExpect(jsonPath("$.name").value("Test Project"));
+    }
+
+    @Test
+    void getProjectsByType_ShouldReturnFilteredProjects() throws Exception {
+        List<ProjectDto> projects = Arrays.asList(projectDto);
+        when(projectService.getProjectByType(ProjectType.CROCHET)).thenReturn(projects);
+
+        mockMvc.perform(get("/projects/type/CROCHET"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].type").value("CROCHET"));
+    }
+
 }

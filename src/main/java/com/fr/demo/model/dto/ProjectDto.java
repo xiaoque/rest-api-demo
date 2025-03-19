@@ -1,5 +1,6 @@
 package com.fr.demo.model.dto;
 
+import com.fr.demo.model.enums.ProjectEventType;
 import com.fr.demo.model.enums.ProjectType;
 
 import lombok.AllArgsConstructor;
@@ -15,4 +16,5 @@ public class ProjectDto {
     private Integer id;
     private String name;
     private ProjectType type;
+    private ProjectEventType eventType;
 }
