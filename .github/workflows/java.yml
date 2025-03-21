@@ -1,0 +1,58 @@
+name: Java CI with Maven and Kafka
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      zookeeper:
+        image: confluentinc/cp-zookeeper:7.3.0
+        ports:
+          - 2181:2181
+        env:
+          ZOOKEEPER_CLIENT_PORT: 2181
+          ZOOKEEPER_TICK_TIME: 2000
+
+      kafka:
+        image: confluentinc/cp-kafka:7.3.0
+        ports:
+          - 9093:9093
+        env:
+          KAFKA_BROKER_ID: 1
+          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
+          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093
+          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        options: >-
+          --health-cmd="kafka-topics --bootstrap-server localhost:9093 --list"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Wait for Kafka to be ready
+        run: |
+          echo "Waiting for Kafka broker to be ready..."
+          sleep 20  # Simple wait, or replace with a more robust health check
+
+      - name: Set Kafka env variable
+        run: echo "KAFKA_BOOTSTRAP_SERVERS=localhost:9093" >> $GITHUB_ENV
+
+      - name: Build with Maven
+        run: mvn -B clean package --file pom.xml
