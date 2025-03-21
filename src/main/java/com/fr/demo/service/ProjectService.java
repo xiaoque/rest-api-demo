@@ -22,7 +22,7 @@ public class ProjectService {
     }
 
     public Project convertToEntity(ProjectDto projectDto) {
-        return new Project(projectDto.getId(), projectDto.getName(), projectDto.getType());
+        return new Project(projectDto.getName(), projectDto.getType());
     }
 
     public ProjectDto convertToDto(Project project) {
