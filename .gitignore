@@ -6,6 +6,7 @@ target/
 *.DS_Store
 mvnw
 mvnw.cmd
+/pgdata
 
 ### STS ###
 .apt_generated
