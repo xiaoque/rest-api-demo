@@ -21,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.fr.demo.model.enums.ProjectEventType;
 import com.fr.demo.model.enums.ProjectType;
 import com.fr.demo.exception.ProjectNotFoundException;
 import com.fr.demo.model.dto.ProjectDto;
@@ -104,8 +103,7 @@ public class ProjectServiceTest {
     @Test
     void updaProject_ShouldReturnUpdatedProject_WhenProjectExists() {
         Integer projectId = 1;
-        ProjectDto updatedProjectDto = new ProjectDto(projectId, "Updated name", ProjectType.TEST,
-                ProjectEventType.UPDATED);
+        ProjectDto updatedProjectDto = new ProjectDto(projectId, "Updated name", ProjectType.TEST);
 
         when(projectDao.findById(projectId)).thenReturn(Optional.of(project));
         when(projectDao.save(any(Project.class))).thenAnswer(response -> response.getArgument(0));
@@ -124,8 +122,7 @@ public class ProjectServiceTest {
     @Test
     void updatedProjectDto_ShouldReturnProjectNotFoundException_WhenProjectNotExist() {
         Integer projectId = 1;
-        ProjectDto updatedProjectDto = new ProjectDto(projectId, "Updated name", ProjectType.TEST,
-                ProjectEventType.UPDATED);
+        ProjectDto updatedProjectDto = new ProjectDto(projectId, "Updated name", ProjectType.TEST);
 
         when(projectDao.findById(projectId)).thenReturn(Optional.empty());
 

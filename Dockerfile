@@ -15,4 +15,5 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 COPY src/main/resources/static/ /app/static/
 EXPOSE 4001
+ENV KAFKA_BOOTSTRAP_SERVERS=kafka:9093
 ENTRYPOINT ["java", "-jar", "app.jar"]

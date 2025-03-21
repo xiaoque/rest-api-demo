@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import com.fr.demo.model.dto.ProjectDto;
 import com.fr.demo.model.entity.Project;
-import com.fr.demo.model.enums.ProjectEventType;
 import com.fr.demo.model.enums.ProjectType;
 import com.fr.demo.repository.ProjectDao;
 import com.fr.demo.exception.ProjectNotFoundException;
@@ -26,12 +25,12 @@ public class ProjectService {
         return new Project(projectDto.getId(), projectDto.getName(), projectDto.getType());
     }
 
-    public ProjectDto convertToDto(Project project, ProjectEventType eventType) {
-        return new ProjectDto(project.getId(), project.getName(), project.getType(), eventType);
+    public ProjectDto convertToDto(Project project) {
+        return new ProjectDto(project.getId(), project.getName(), project.getType());
     }
 
     public ProjectDto saveProject(ProjectDto projectDto) {
-        return convertToDto(projectDao.save(convertToEntity(projectDto)), ProjectEventType.CREATED);
+        return convertToDto(projectDao.save(convertToEntity(projectDto)));
     }
 
     public List<ProjectType> getProjectTypes() {
@@ -41,19 +40,19 @@ public class ProjectService {
     public List<ProjectDto> getAllProjects() {
         return StreamSupport.stream(projectDao.findAll()
                 .spliterator(), false)
-                .map(x -> convertToDto(x, null))
+                .map(x -> convertToDto(x))
                 .collect(Collectors.toList());
     }
 
     public ProjectDto findProjectById(Integer id) {
         return projectDao.findById(id)
-                .map(x -> convertToDto(x, null))
+                .map(x -> convertToDto(x))
                 .orElseThrow(() -> new ProjectNotFoundException(id));
     }
 
     public List<ProjectDto> getProjectByType(ProjectType projectType) {
         return StreamSupport.stream(projectDao.findByType(projectType).spliterator(), false)
-                .map(x -> convertToDto(x, null))
+                .map(x -> convertToDto(x))
                 .collect(Collectors.toList());
     }
 
@@ -62,7 +61,7 @@ public class ProjectService {
                 .map(project -> {
                     project.setName(projectDto.getName());
                     project.setType(projectDto.getType());
-                    return convertToDto(projectDao.save(project), ProjectEventType.UPDATED);
+                    return convertToDto(projectDao.save(project));
                 })
                 .orElseThrow(() -> new ProjectNotFoundException(id));
 

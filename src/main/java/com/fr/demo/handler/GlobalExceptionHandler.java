@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fr.demo.exception.ProjectNotFoundException;
 import com.fr.demo.model.dto.ErrorResponse;
 
@@ -24,6 +25,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         logger.error("An error occurred: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "An internal error occurred");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler(JsonProcessingException.class)
+    public ResponseEntity<ErrorResponse> handleJsonProcessingException(Exception ex) {
+        logger.error("An error occurred during json processing: {}", ex.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "An internal error occurred");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
