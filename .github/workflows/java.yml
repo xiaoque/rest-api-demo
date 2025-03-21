@@ -25,15 +25,10 @@ jobs:
           - 9093:9093
         env:
           KAFKA_BROKER_ID: 1
-          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
-          KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093
+          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-        options: >-
-          --health-cmd="kafka-topics --bootstrap-server localhost:9093 --list"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
 
     steps:
       - name: Checkout repository
